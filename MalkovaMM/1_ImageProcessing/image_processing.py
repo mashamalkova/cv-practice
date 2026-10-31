@@ -9,13 +9,13 @@ class ImageFilter(abc.ABC):
         self.params = params
 
     @staticmethod
-    def get_filter(image, filter_type):
+    def get_filter(image, filter_type, params=None):
         if filter_type == 'resize':
-            return Resize(image)
+            return Resize(image, params)
         elif filter_type == 'grayscale':
             return Grayscale(image)
         elif filter_type == 'antique':
-            return Antique(image)
+            return Antique(image, params)
         elif filter_type == 'fadecolor':
             return FadeColor(image)
         elif filter_type == 'imitfilm':
@@ -27,7 +27,7 @@ class ImageFilter(abc.ABC):
         elif filter_type == 'neonlight':
             return NeonLight(image)
         else:
-            raise ValueError(f'Фильтра {filter_type} не существует')
+            raise ValueError(f'{filter_type} filter does not exist')
 
     @abc.abstractmethod
     def apply_filter(self):
@@ -39,13 +39,11 @@ class Resize(ImageFilter):
         super().__init__(image, params)
 
     def apply_filter(self):
-        h, w, colors = self.image.shape
-        nh = h - (h%2)
-        nw = w - (w%2)
-        nimage = self.image[:nh, :nw]
-        reshaped = nimage.reshape(h//2, 2, w//2, 2, colors)
-        result = reshaped.mean(axis=(1,3))
-        return np.clip(result, 0, 255).astype(np.uint8)
+        koef = self.params.resize if self.params and hasattr(self.params, 'resize') else 2
+        if koef <=1 :
+            raise ValueError('Incorrect compression ratio')
+        resized_img = self.image[::int(koef), ::int(koef)]
+        return resized_img
 
 
 class Grayscale(ImageFilter):
@@ -67,9 +65,10 @@ class Antique(ImageFilter):
         super().__init__(image, params)
 
     def apply_filter(self):
-        texture = cv2.imread('images/texture.jpg')
+        texture_path = self.params.texture 
+        texture = cv2.imread(texture_path)
         if texture is None:
-            raise ValueError("Не удалось отфильтровать фотографию")
+            raise ValueError(f"Could not open the texture image on the way: {params['texture_path']}")
         h, w = self.image.shape[:2]
         texture = cv2.resize(texture, (w,h))
         img1 = self.image.astype(np.float32)/255.0
@@ -167,7 +166,7 @@ class NeonLight(ImageFilter):
                        [-1,0,1]], dtype=np.float32)
         Gx = cv2.filter2D(blurred,cv2.CV_32F,gx)
         Gy = cv2.filter2D(blurred,cv2.CV_32F,gy)
-        magnitude = np.abs(Gx) + np.abs(Gy)
+        magnitude = np.sqrt(Gx**2 + Gy**2)
         edges = np.clip(magnitude, 0, 255)
         neonlines = np.zeros_like(self.image,dtype=np.float32)
         neonlines[:,:, 2] = edges*0.5

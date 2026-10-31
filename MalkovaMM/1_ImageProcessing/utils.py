@@ -8,5 +8,5 @@ def read_image(image_path):
         raise FileNotFoundError(f"Файл {image_path} не найден")
     image = cv2.imread(str(path))
     if image is None:
-        raise ValueError(f"Не удалось прочитать изображение {image_path}")
+        raise ValueError(f"Could not read the image {image_path}")
     return image

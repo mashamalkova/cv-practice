@@ -28,6 +28,16 @@ def cli_argument_parser():
                         choices = ['resize', 'grayscale','antique', 'fadecolor',
                         'imitfilm', 'matte', 'noisescratches', 'neonlight'],
                         dest='filter_type')
+    parser.add_argument('-t', '--texture-path', 
+                        help='путь к текстуре', 
+                        type=str, 
+                        default = 'images/texture.jpg', 
+                        dest = 'texture')
+    parser.add_argument('-r', '--resize', 
+                        help='коэффициент для resize', 
+                        type=int, 
+                        default = 2,
+                        dest = 'resize')
 
     args = parser.parse_args()
 
@@ -38,10 +48,10 @@ def main():
     args = cli_argument_parser()
     try:
         image = read_image(args.image_path)
-        filter_processing = ImageFilter.get_filter(image, args.filter_type)
+        filter_processing = ImageFilter.get_filter(image, args.filter_type, args)
         result = filter_processing.apply_filter()
         cv2.imwrite(args.output_path, result)
-        logger.info('изображение сохранено успешно')
+        logger.info('The image was saved successfully')
     except Exception as ex:
         logger.error((f'{str(ex)}'))
 
