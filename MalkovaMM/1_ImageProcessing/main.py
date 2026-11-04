@@ -35,8 +35,8 @@ def cli_argument_parser():
                         dest = 'texture')
     parser.add_argument('-r', '--resize', 
                         help='коэффициент для resize', 
-                        type=int, 
-                        default = 2,
+                        type=float, 
+                        default = 1.0,
                         dest = 'resize')
 
     args = parser.parse_args()

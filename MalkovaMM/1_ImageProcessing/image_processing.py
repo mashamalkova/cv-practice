@@ -39,11 +39,30 @@ class Resize(ImageFilter):
         super().__init__(image, params)
 
     def apply_filter(self):
-        koef = self.params.resize if self.params and hasattr(self.params, 'resize') else 2
-        if koef <=1 :
+        koef = self.params.resize if self.params and hasattr(self.params, 'resize') else 1.0
+        if koef <=0 :
             raise ValueError('Incorrect compression ratio')
-        resized_img = self.image[::int(koef), ::int(koef)]
-        return resized_img
+        h,w,colors = self.image.shape
+        nh = int(h*koef)
+        nw = int(w*koef)
+        ny = np.arange(nh)
+        nx = np.arange(nw)
+        y_orig = ny/koef
+        x_orig = nx/koef
+        y0 = np.floor(y_orig).astype(int)
+        x0 = np.floor(x_orig).astype(int)
+        y1 = np.clip(y0+1, 0, h-1)
+        x1 = np.clip(x0+1, 0, w-1)
+        dy = (y_orig - y0)[:, np.newaxis, np.newaxis]
+        dx = (x_orig - x0)[np.newaxis, :, np.newaxis]
+        p00 = self.image[y0[:, None], x0]
+        p01 = self.image[y0[:, None], x1]
+        p10 = self.image[y1[:, None], x0]
+        p11 = self.image[y1[:, None], x1]
+        top = p00*(1-dx) + p01*dx
+        bottom = p10*(1-dx) + p11*dx
+        result = top*(1-dy) + bottom*dy
+        return np.clip(result, 0, 255).astype(np.uint8)
 
 
 class Grayscale(ImageFilter):
